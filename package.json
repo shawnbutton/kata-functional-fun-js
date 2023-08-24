@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "jest": "^29.6.4",
+    "ramda": "^0.29.0",
     "standard": "^17.1.0"
   }
 }
