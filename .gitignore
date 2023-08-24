@@ -1,0 +1,7 @@
+# ide files
+.idea/
+
+node_modules/
+
+# MAC files
+.DS_Store

@@ -1,0 +1,18 @@
+{
+  "name": "kata",
+  "version": "1.0.0",
+  "description": "base project for js katas",
+  "main": "index.js",
+  "author": "shawn <shawnbutton@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "lint": "standard",
+    "lint-fix": "standard --fix",
+    "test": "jest --verbose --colors",
+    "watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.6.4",
+    "standard": "^17.1.0"
+  }
+}
