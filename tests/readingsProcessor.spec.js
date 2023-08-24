@@ -1,98 +1,24 @@
 'use strict'
 /* eslint-env jest */
 
+const { processReadings } = require('../src/readingsProcessor')
 const { clone } = require('ramda')
 
-const sut = require('../src/readingsProcessor')
-
-describe('process readings characterization test', () => {
-  it('matches expected', () => {
-    const given = [
-      {
-        name: 'no data is ignored',
-        data: [],
-        temperature: 0,
-        type: 'environmental'
-      },
-      {
-        name: 'inactive is ignored',
-        data: [0],
-        inactive: true,
-        temperature: 0,
-        type: 'environmental'
-      },
-      {
-        name: 'environmental is grouped in environmental',
-        data: [0],
-        temperature: 0,
-        type: 'environmental'
-      },
-      {
-        name: 'asset is grouped in asset',
-        data: ['abc'],
-        temperature: -10,
-        type: 'asset'
-      },
-      {
-        name: 'vehicle type is grouped in vehicle',
-        data: ['abc'],
-        temperature: 10,
-        type: 'vehicle'
-      },
-      {
-        name: 'other types are ignored',
-        data: ['abc'],
-        temperature: 10,
-        type: 'other'
-      }
-    ]
-
-    const expected = {
-      environmental: [
-        {
-          name: 'environmental is grouped in environmental',
-          data: [
-            0
-          ],
-          temperature: 32,
-          type: 'environmental'
-        }
-      ],
-      asset: [
-        {
-          name: 'asset is grouped in asset',
-          data: [
-            'abc'
-          ],
-          temperature: 14,
-          type: 'asset'
-        }
-      ],
-      vehicle: [
-        {
-          name: 'vehicle type is grouped in vehicle',
-          data: [
-            'abc'
-          ],
-          temperature: 50,
-          type: 'vehicle'
-        }
-      ]
-    }
-
-    const result = sut.processReadings(given)
-
-    expect(result).toEqual(expected)
-  })
-})
-
 describe('process readings', () => {
-  const buildReading = () => {
+  const buildReading = (type = 'environmental') => {
     return {
       data: [0],
+      name: 'test data',
+      inactive: false,
       temperature: 0,
-      type: 'default'
+      type
     }
+  }
+
+  const buildFarenheitReading = (type = 'environmental') => {
+    const reading = buildReading(type)
+    reading.temperature = 32
+    return reading
   }
 
   it('should ignore readings with no data', () => {
@@ -101,7 +27,7 @@ describe('process readings', () => {
 
     const expected = {}
 
-    expect(sut.processReadings([given])).toEqual(expected)
+    expect(processReadings([given])).toEqual(expected)
   })
 
   it('should ignore readings that are inactive', () => {
@@ -110,7 +36,7 @@ describe('process readings', () => {
 
     const expected = {}
 
-    expect(sut.processReadings([given])).toEqual(expected)
+    expect(processReadings([given])).toEqual(expected)
   })
 
   test('environmental is grouped', () => {
@@ -118,68 +44,62 @@ describe('process readings', () => {
     given.type = 'environmental'
 
     const expected = {
-      environmental: [
-        {
-          data: [0],
-          temperature: 32,
-          type: 'environmental'
-        }
-      ]
+      environmental: [buildFarenheitReading()]
     }
 
-    expect(sut.processReadings([given])).toEqual(expected)
+    expect(processReadings([given])).toEqual(expected)
   })
 
   test('asset is grouped', () => {
-    const given = buildReading()
-    given.type = 'asset'
+    const given = buildReading('asset')
 
     const expected = {
-      asset: [
-        {
-          data: [0],
-          temperature: 32,
-          type: 'asset'
-        }
-      ]
+      asset: [buildFarenheitReading('asset')]
     }
 
-    expect(sut.processReadings([given])).toEqual(expected)
+    expect(processReadings([given])).toEqual(expected)
   })
 
   test('vehicle is grouped', () => {
-    const given = buildReading()
-    given.type = 'vehicle'
+    const given = buildReading('vehicle')
 
     const expected = {
-      vehicle: [
-        {
-          data: [0],
-          temperature: 32,
-          type: 'vehicle'
-        }
-      ]
+      vehicle: [buildFarenheitReading('vehicle')]
     }
 
-    expect(sut.processReadings([given])).toEqual(expected)
+    expect(processReadings([given])).toEqual(expected)
   })
 
   test('other types are ignored', () => {
-    const given = buildReading()
-    given.type = 'something unknown'
+    const given = buildReading('something unknown')
 
-    expect(sut.processReadings([given])).toEqual({})
+    expect(processReadings([given])).toEqual({})
   })
 
+  test('will group multiple readings', () => {
+    const given = [
+      buildReading('environmental'),
+      buildReading('environmental'),
+      buildReading('asset'),
+      buildReading('vehicle')
+    ]
+
+    const expected = {
+      environmental: [buildFarenheitReading(), buildFarenheitReading()],
+      asset: [buildFarenheitReading('asset')],
+      vehicle: [buildFarenheitReading('vehicle')]
+    }
+
+    expect(processReadings(given)).toEqual(expected)
+  })
+
+  // todo this test does not pass because currently the code mutates the input. This is a bad thing. Perhaps after your functional refactoring you can enable this test and get it to pass?
   xit('should not mutate readings', () => {
-    const given = [{
-      data: [0],
-      temperature: 0
-    }]
+    const given = [buildReading()]
 
     const identicalToGiven = clone(given)
 
-    sut.processReadings(given)
+    processReadings(given)
 
     expect(given).toEqual(identicalToGiven)
   })
